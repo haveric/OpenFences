@@ -58,7 +58,7 @@ class simpleapp_tk(tkinter.Tk):
         self.root.destroy()
 
     def MouseRightDown(self, event):
-        if (event.WindowName == None):
+        if (event.WindowName == None or event.WindowName == "FolderView"):
             self.dragging = True
             self.startX = event.Position[0]
             self.startY = event.Position[1]
