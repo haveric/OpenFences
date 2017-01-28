@@ -12,6 +12,7 @@ class simpleapp_tk(tkinter.Tk):
         self.startY = -1
         self.endX = -1
         self.endY = -1
+        self.floaters = []
         self.initialize()
         
     def initialize(self):
@@ -25,13 +26,17 @@ class simpleapp_tk(tkinter.Tk):
         self.entry.bind("<Return>", self.OnPressEnter)
         self.entryVariable.set(u"Enter text here.")
         
-        button = tkinter.Button(self, text=u"Quit!", command=self.OnButtonClick)
+        button = tkinter.Button(self, text=u"Quit", command=self.OnButtonClick)
         button.grid(column=1, row=0)
         
         self.labelVariable = tkinter.StringVar()
         label = tkinter.Label(self, textvariable=self.labelVariable, anchor="w", fg="white", bg="blue")
         label.grid(column=0, row=1, columnspan=2, sticky='EW')
-        self.labelVariable.set(u"Hello !")
+        self.labelVariable.set(u"Welcome to Floaters !")
+        
+        self.destroyAllButton = tkinter.Button(self, text="Destroy All Floaters")
+        self.destroyAllButton.grid(column=0, row=1)
+        self.destroyAllButton.bind("<ButtonPress-1>", self.DestroyAll)
         
         self.grid_columnconfigure(0, weight=1)
         #self.resizable(True, False)
@@ -41,8 +46,8 @@ class simpleapp_tk(tkinter.Tk):
         self.entry.selection_range(0, tkinter.END)
         
         hm = pyHook.HookManager()
-        hm.SubscribeMouseRightDown(self.MouseRightDown)
-        hm.SubscribeMouseRightUp(self.MouseRightUp)
+        hm.SubscribeMouseMiddleDown(self.MouseMiddleDown)
+        hm.SubscribeMouseMiddleUp(self.MouseMiddleUp)
         hm.SubscribeMouseMove(self.MouseMove)
         hm.HookMouse()
 
@@ -57,9 +62,10 @@ class simpleapp_tk(tkinter.Tk):
     def quit(self):
         self.root.destroy()
 
-    def MouseRightDown(self, event):
+    def MouseMiddleDown(self, event):
         if (event.WindowName == None or event.WindowName == "FolderView"):
             self.dragging = True
+            print("mouse right down while dragging")
             self.startX = event.Position[0]
             self.startY = event.Position[1]
             self.endX = self.startX
@@ -70,17 +76,18 @@ class simpleapp_tk(tkinter.Tk):
             
         return True
 
-    def MouseRightUp(self, event):
+    def MouseMiddleUp(self, event):
         if (self.dragging == True):
             self.dragging = False
-            
+            print("mouse right up while dragging")
             x = self.rect.x
             y = self.rect.y
             width = self.rect.width
             height = self.rect.height
             
             self.rect.destroy()
-            self.floater = FloatingWindow(self.parent, x, y, width, height)
+            if width > 10 and height > 10:
+                self.floaters.append(FloatingWindow(self.parent, x, y, width, height))
 
             '''            
             # called when mouse events are received
@@ -104,14 +111,21 @@ class simpleapp_tk(tkinter.Tk):
             
             self.rect.UpdatePosition(self.endX, self.endY)
         return True
+        
+    def DestroyAll(self, event):
+        for floater in self.floaters:
+            floater.DestroyMe()
+        self.floaters = []
 
 class Rect(tkinter.Toplevel):
     def __init__(self, parent, x, y):
         tkinter.Toplevel.__init__(self, parent)
         self.overrideredirect(True)
         self.withdraw()
-        self.geometry('+%d+%d' % (x, y))
-        self.configure(width=1,height=1,bg='white', highlightbackground='black', highlightthickness=1)
+        #'+{}+{}'.format(x, y)
+        #self.geometry('+%d+%d' % (x, y))
+        self.geometry('+{}+{}'.format(x, y))
+        self.configure(width=1,height=1,bg='white', highlightbackground='black', highlightthickness=2)
         self.attributes("-transparentcolor", "white")
         self.attributes("-alpha", "1")
         self.startX = x
@@ -141,33 +155,40 @@ class Rect(tkinter.Toplevel):
         
         self.x = x1
         self.y = y1
-        self.geometry('+%d+%d' % (self.x, self.y))
-        self.configure(width=self.width, height=self.height)
+        self.geometry('{}x{}+{}+{}'.format(self.width, self.height, self.x, self.y))
 
 class FloatingWindow(tkinter.Toplevel):
     def __init__(self, parent, x, y, width, height):
-        tkinter.Toplevel.__init__(self);
-        self.overrideredirect(True);
-        self.grid();
-        self.geometry('+%d+%d' % (x, y));
-        self.configure(width=width, height=height)
+        tkinter.Toplevel.__init__(self)
+        self.overrideredirect(True)
+        self.grid()
+        self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        self.configure(bg='gray')
+        self.xVal = x
+        self.yVal = y
 
         self.grip = tkinter.Label(self, bitmap="gray25")
-        self.grip.grid(column=0,row=0);
+        self.grip.grid(column=0,row=0)
         self.grip.bind("<ButtonPress-1>", self.StartMove)
         self.grip.bind("<ButtonRelease-1>", self.StopMove)
         self.grip.bind("<B1-Motion>", self.OnMotion)
         
         self.label = tkinter.Label(self, text="Click on the grip to move")
-        self.label.grid(column=1,row=0);
+        self.label.grid(column=1,row=0)
 
         self.removeButton = tkinter.Button(self, text="x")
         self.removeButton.grid(column=2,row=0)
         self.removeButton.bind("<ButtonPress-1>", self.Destroy)
         
-    def Destroy(self, event):
-        self.destroy()
+        print("creating floating window at: ",x,",",y,"size: ",width,",",height)
         
+    def Destroy(self, event):
+        self.DestroyMe()
+        
+    def DestroyMe(self):
+        print("destroying floating window at: ",self.xVal,",",self.yVal)
+        self.destroy()
+    
     def StartMove(self, event):
         self.x = event.x
         self.y = event.y
