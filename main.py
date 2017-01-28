@@ -146,21 +146,28 @@ class Rect(tkinter.Toplevel):
 
 class FloatingWindow(tkinter.Toplevel):
     def __init__(self, parent, x, y, width, height):
-        tkinter.Toplevel.__init__(self)
-        self.overrideredirect(True)
-
-        self.geometry('+%d+%d' % (x, y))
+        tkinter.Toplevel.__init__(self);
+        self.overrideredirect(True);
+        self.grid();
+        self.geometry('+%d+%d' % (x, y));
         self.configure(width=width, height=height)
 
-        self.label = tkinter.Label(self, text="Click on the grip to move")
         self.grip = tkinter.Label(self, bitmap="gray25")
-        self.grip.pack(side="left", fill="y")
-        self.label.pack(side="right", fill="both", expand=True)
-
+        self.grip.grid(column=0,row=0);
         self.grip.bind("<ButtonPress-1>", self.StartMove)
         self.grip.bind("<ButtonRelease-1>", self.StopMove)
         self.grip.bind("<B1-Motion>", self.OnMotion)
+        
+        self.label = tkinter.Label(self, text="Click on the grip to move")
+        self.label.grid(column=1,row=0);
 
+        self.removeButton = tkinter.Button(self, text="x")
+        self.removeButton.grid(column=2,row=0)
+        self.removeButton.bind("<ButtonPress-1>", self.Destroy)
+        
+    def Destroy(self, event):
+        self.destroy()
+        
     def StartMove(self, event):
         self.x = event.x
         self.y = event.y
